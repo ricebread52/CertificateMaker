@@ -6,7 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
-    "build": "shx rm -rf dist && tsc && shx cp -r src/templates/assets dist/templates/assets",
+    "build": "shx rm -rf dist && tsc && shx cp -r src/templates/assets dist/templates/assets && npx puppeteer browsers install chrome",
     "start": "node dist/app.js",
     "test": "echo \"No tests yet\" && exit 0"
   },
