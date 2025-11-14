@@ -1,0 +1,157 @@
+import { Router } from "express";
+import puppeteer from "puppeteer";
+import QRCode from "qrcode";
+import { renderSvgTemplate } from "../templates/svgRenderer";
+import { getTemplateSize } from "../templates/catalog";
+
+const router = Router();
+
+/**
+ * Convert HTML (or an HTML wrapper that contains an inline SVG) to PDF at exact pixel size.
+ * We wrap the raw SVG in a minimal HTML so puppeteer renders it consistently.
+ */
+async function svgStringToPdf(svgString: string, widthPx: number, heightPx: number) {
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+  });
+
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: Math.max(800, Math.round(widthPx)), height: Math.max(600, Math.round(heightPx)), deviceScaleFactor: 1 });
+
+    // ✅ THE FONT FIX:
+    // This injects the Google Font into the HTML.
+    // Puppeteer will wait for it to download ('networkidle0')
+    // and then embed it directly into the PDF.
+    const html = `
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8"/>
+        <style>
+          /* This @import forces font embedding */
+          @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800&display=swap');
+        </style>
+      </head>
+      <body style="margin:0;padding:0">
+        ${svgString}
+      </body>
+    </html>`;
+
+    // Wait until the font has finished downloading
+    await page.setContent(html, { waitUntil: "networkidle0" });
+
+    const pdf = await page.pdf({
+      printBackground: true,
+      width: `${Math.round(widthPx)}px`,
+      height: `${Math.round(heightPx)}px`,
+      margin: { top: "0px", right: "0px", bottom: "0px", left: "0px" },
+      pageRanges: "1",
+    });
+
+    return pdf;
+  } finally {
+    await browser.close();
+  }
+}
+
+/**
+ * POST /api/templates/generate-from-template
+ * ... (rest of the file is correct)
+ */
+router.post("/generate-from-template", async (req, res) => {
+  try {
+    const {
+      templateId,
+      values,
+      options,
+      signatureLeftDataUrl,
+      signatureRightDataUrl,
+    } = req.body as {
+      templateId: string;
+      values: Record<string, string>;
+      options?: { accent?: string; logoDataUrl?: string; qrText?: string };
+      signatureLeftDataUrl?: string;
+      signatureRightDataUrl?: string;
+    };
+
+    if (!templateId || !values) {
+      return res.status(400).json({ error: "templateId and values are required" });
+    }
+
+    const renderOpts: any = {
+      accent: options?.accent,
+      logoDataUrl: options?.logoDataUrl,
+      signatureLeftDataUrl,
+      signatureRightDataUrl,
+    };
+
+    if (options?.qrText) {
+      renderOpts.qrDataUrl = await QRCode.toDataURL(options.qrText, { margin: 1, scale: 6 });
+    }
+
+    const svg = renderSvgTemplate(templateId, values, renderOpts);
+    const { width, height } = getTemplateSize(templateId);
+    const pdf = await svgStringToPdf(svg, width, height);
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${templateId}-certificate.pdf"`);
+    return res.status(200).send(pdf);
+  } catch (err) {
+    console.error("template PDF error:", err);
+    return res.status(500).json({ error: "Failed to generate template PDF" });
+  }
+});
+
+/**
+ * POST /api/templates/preview
+ * ... (rest of the file is correct)
+ */
+router.post("/preview", async (req, res) => {
+  try {
+    const {
+      templateId,
+      values,
+      options,
+      signatureLeftDataUrl,
+      signatureRightDataUrl,
+    } = req.body as {
+      templateId: string;
+      values: Record<string, string>;
+      options?: { accent?: string; logoDataUrl?: string; qrText?: string };
+      signatureLeftDataUrl?: string;
+      signatureRightDataUrl?: string;
+    };
+
+    if (!templateId || !values) {
+      return res.status(400).json({ error: "templateId and values are required" });
+    }
+
+    const renderOpts: any = {
+      accent: options?.accent,
+      logoDataUrl: options?.logoDataUrl,
+      signatureLeftDataUrl,
+      signatureRightDataUrl,
+    };
+
+    if (options?.qrText) {
+      renderOpts.qrDataUrl = await QRCode.toDataURL(options.qrText, { margin: 1, scale: 6 });
+    }
+
+    const svg = renderSvgTemplate(templateId, values, renderOpts);
+
+    res.setHeader("Content-Type", "image/svg+xml; charset=utf-8");
+    return res.status(200).send(svg);
+  } catch (err: any) {
+    console.error("DEV preview error (full):", err);
+    return res.status(500).json({
+      error: "Failed to render template SVG (dev details)",
+      message: err?.message ?? String(err),
+      stack: err?.stack?.split("\n").slice(0, 20) ?? null,
+    });
+  }
+});
+
+
+export default router;

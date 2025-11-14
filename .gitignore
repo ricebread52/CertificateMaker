@@ -1,0 +1,25 @@
+# Node.js dependencies
+node_modules/
+frontend/node_modules/
+server/node_modules/
+
+# Sensitive environment files
+# DO NOT ADD THIS TO GITHUB
+server/.env
+
+# Generated files
+# This will ignore all the PDFs you create in the 'generated' folder
+server/generated/
+
+# Build output
+dist/
+.vite/
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS-specific files
+.DS_Store
+Thumbs.db
