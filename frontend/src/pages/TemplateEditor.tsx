@@ -7,6 +7,10 @@ import PDFViewer from "../components/PDFViewer";
 type Values = Record<string, string>;
 
 export default function TemplateEditor() {
+  // ✅ ADD THIS LINE:
+  // This automatically gets the new Vercel URL, or falls back to /api for localhost
+  const apiUrl = import.meta.env.VITE_API_URL || '';
+
   const { id } = useParams();
   const template = useMemo<TemplateDef | undefined>(
     () => TEMPLATES.find((t) => t.id === id),
@@ -78,7 +82,8 @@ export default function TemplateEditor() {
         signatureRightDataUrl: signatureRightDataUrl ?? undefined,
       };
 
-      const resp = await fetch("/api/templates/preview", {
+      // ✅ UPDATE THIS LINE:
+      const resp = await fetch(`${apiUrl}/api/templates/preview`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -93,13 +98,15 @@ export default function TemplateEditor() {
     } catch (err) {
       console.error("Preview error:", err);
     }
-  }, [template, values, accent, logoDataUrl, signatureLeftDataUrl, signatureRightDataUrl, qrText]);
+    // ✅ ADD apiUrl to dependency array
+  }, [template, values, accent, logoDataUrl, signatureLeftDataUrl, signatureRightDataUrl, qrText, apiUrl]);
 
   // Generate PDF (for Viewer)
   async function handleGeneratePdf() {
     setIsGenerating(true);
     try {
-      const resp = await fetch("/api/templates/generate-from-template", {
+      // ✅ UPDATE THIS LINE:
+      const resp = await fetch(`${apiUrl}/api/templates/generate-from-template`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -214,8 +221,7 @@ export default function TemplateEditor() {
             </div>
           </label>
 
-          {/* FILE INPUTS (Simplified for brevity, add yours back if needed) */}
-          {/* ... Add your Logo/Signature inputs here if they were working fine ... */}
+          {/* ... Add your Logo/Signature inputs here ... */}
           
         </div>
 

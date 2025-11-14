@@ -11,6 +11,7 @@ export default function GenerateCertificate() {
   const [status, setStatus] = useState("");
 
   // 1. Handle File Upload (CLEAN UI VERSION)
+  // ... (Your handleFileUpload function is correct, no changes needed)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -26,7 +27,6 @@ export default function GenerateCertificate() {
       const normalizedData = rawData.map((row: any) => {
         const newRow: any = {};
         Object.keys(row).forEach(key => {
-          // Standard cleanup
           const cleanKey = key.trim().toUpperCase().replace(/\s+/g, '_');
           
           let val = row[key];
@@ -34,8 +34,6 @@ export default function GenerateCertificate() {
              val = val.toLocaleDateString('en-GB'); 
           }
           newRow[cleanKey] = val;
-          
-          // REMOVED: The alias block that caused duplicates in the UI
         });
         return newRow;
       });
@@ -45,10 +43,15 @@ export default function GenerateCertificate() {
     reader.readAsBinaryString(file);
   };
 
+
   // 2. Generate & Zip Logic
   const handleBulkGenerateAndZip = async () => {
     setIsProcessing(true);
     setStatus("Initializing ZIP archive...");
+
+    // ✅ ADD THIS LINE:
+    // This automatically gets the new Vercel URL, or falls back to /api for localhost
+    const apiUrl = import.meta.env.VITE_API_URL || '';
     
     const zip = new JSZip(); 
     let successCount = 0;
@@ -60,22 +63,20 @@ export default function GenerateCertificate() {
       setStatus(`Generating ${i + 1} of ${excelData.length}: ${row.NAME || 'Participant'}...`);
 
       try {
-        // Prepare values
         const values = { ...row }; 
 
-        // ✅ SILENT FIX: Map COMPETITION/EVENT to COURSE here (before defaults)
-        // This ensures the PDF gets the right data without cluttering the UI table.
         if (values['COMPETITION']) values['COURSE'] = values['COMPETITION'];
         if (values['EVENT']) values['COURSE'] = values['EVENT'];
         if (values['WORKSHOP']) values['COURSE'] = values['WORKSHOP'];
 
         const templateDef = TEMPLATES.find(t => t.id === selectedTemplate);
         templateDef?.fields.forEach(f => {
-           // Only apply default if value is missing
            if (!values[f.key]) values[f.key] = f.default;
         });
 
-        const resp = await fetch("/api/templates/generate-from-template", {
+        // ✅ UPDATE THIS LINE:
+        // Changed '/api/...' to `${apiUrl}/api/...`
+        const resp = await fetch(`${apiUrl}/api/templates/generate-from-template`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -113,6 +114,7 @@ export default function GenerateCertificate() {
     setIsProcessing(false);
   };
 
+  // ... (Your return/JSX part is correct, no changes needed)
   return (
     <div className="max-w-4xl mx-auto p-8">
       <h1 className="text-3xl font-bold mb-6">Bulk Certificate Generator</h1>
