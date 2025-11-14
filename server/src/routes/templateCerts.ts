@@ -1,36 +1,38 @@
 import { Router } from "express";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 import QRCode from "qrcode";
 import { renderSvgTemplate } from "../templates/svgRenderer";
 import { getTemplateSize } from "../templates/catalog";
 
+// This creates the router that app.ts needs
 const router = Router();
 
 /**
  * Convert HTML (or an HTML wrapper that contains an inline SVG) to PDF at exact pixel size.
- * We wrap the raw SVG in a minimal HTML so puppeteer renders it consistently.
  */
 async function svgStringToPdf(svgString: string, widthPx: number, heightPx: number) {
+  
   const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    args: chromium.args,
+    executablePath: await chromium.executablePath(),
   });
 
   try {
     const page = await browser.newPage();
+    
+    // ✅ FIX: Removed the error-causing line page.setIgnoreHTTPSErrors(true);
+    // It is not needed for this application.
+
     await page.setViewport({ width: Math.max(800, Math.round(widthPx)), height: Math.max(600, Math.round(heightPx)), deviceScaleFactor: 1 });
 
-    // ✅ THE FONT FIX:
-    // This injects the Google Font into the HTML.
-    // Puppeteer will wait for it to download ('networkidle0')
-    // and then embed it directly into the PDF.
+    // This font-embedding HTML is still correct
     const html = `
     <!doctype html>
     <html>
       <head>
         <meta charset="utf-8"/>
         <style>
-          /* This @import forces font embedding */
           @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800&display=swap');
         </style>
       </head>
@@ -39,7 +41,6 @@ async function svgStringToPdf(svgString: string, widthPx: number, heightPx: numb
       </body>
     </html>`;
 
-    // Wait until the font has finished downloading
     await page.setContent(html, { waitUntil: "networkidle0" });
 
     const pdf = await page.pdf({
@@ -58,7 +59,6 @@ async function svgStringToPdf(svgString: string, widthPx: number, heightPx: numb
 
 /**
  * POST /api/templates/generate-from-template
- * ... (rest of the file is correct)
  */
 router.post("/generate-from-template", async (req, res) => {
   try {
@@ -106,7 +106,6 @@ router.post("/generate-from-template", async (req, res) => {
 
 /**
  * POST /api/templates/preview
- * ... (rest of the file is correct)
  */
 router.post("/preview", async (req, res) => {
   try {
@@ -153,5 +152,5 @@ router.post("/preview", async (req, res) => {
   }
 });
 
-
+// This line fixes the 'no default export' error
 export default router;

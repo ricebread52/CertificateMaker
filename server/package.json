@@ -6,7 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/app.ts",
-    "build": "shx rm -rf dist && tsc && shx cp -r src/templates/assets dist/templates/assets && npx puppeteer browsers install chrome",
+    "build": "shx rm -rf dist && tsc && shx cp -r src/templates/assets dist/templates/assets",
     "start": "node dist/app.js",
     "test": "echo \"No tests yet\" && exit 0"
   },
@@ -14,12 +14,13 @@
   "author": "Jeneil Johnson",
   "license": "ISC",
   "dependencies": {
+    "@sparticuz/chromium": "^141.0.0",
     "@supabase/supabase-js": "^2.81.1",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
     "mongoose": "^8.19.3",
-    "puppeteer": "^24.30.0",
+    "puppeteer-core": "^24.30.0",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
