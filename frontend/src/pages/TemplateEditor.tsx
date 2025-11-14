@@ -55,15 +55,6 @@ export default function TemplateEditor() {
     // setPdfUrl(null); // Optional: Hide PDF if user changes text
   }
 
-  function readAsDataURL(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-      const fr = new FileReader();
-      fr.onload = () => resolve(fr.result as string);
-      fr.onerror = reject;
-      fr.readAsDataURL(file);
-    });
-  }
-
   // Preview (SVG)
   const doPreview = useCallback(async () => {
     // Switch off PDF view when updating preview
