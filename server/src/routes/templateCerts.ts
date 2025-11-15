@@ -41,7 +41,7 @@ async function svgStringToPdf(svgString: string, widthPx: number, heightPx: numb
       </body>
     </html>`;
 
-    await page.setContent(html, { waitUntil: "networkidle0" });
+    await page.setContent(html, { waitUntil: "networkidle0", timeout: 60000 });
 
     const pdf = await page.pdf({
       printBackground: true,
