@@ -4,7 +4,8 @@ dotenv.config();
 import express from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import path from "path"; // ✅ Added to help serve files if needed
+import path from "path";
+import chromium from "@sparticuz/chromium"; // <-- 1. ADD THIS IMPORT
 
 // Routes
 import certificatesRouter from "./routes/certificates";
@@ -14,7 +15,7 @@ const app = express();
 
 // Middleware
 app.use(cors());
-app.use(express.json({ limit: "50mb" })); // ✅ Increased limit just in case Puppeteer sends big buffers
+app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 const PORT = process.env.PORT || 5000;
@@ -22,15 +23,13 @@ const PORT = process.env.PORT || 5000;
 // Health Check
 app.get("/", (_req, res) => res.send("CertificateMaker Backend Running"));
 
-// ✅ Mount the Certificates Router (This contains your new /generate endpoint)
+// Mount the Certificates Router
 app.use("/api/certificates", certificatesRouter);
 
 // Mount Templates Router
 app.use("/api/templates", templateCerts);
 
-// ✅ OPTIONAL: Serve your SVG assets statically
-// This allows the frontend to fetch raw SVGs if you want to show previews
-// Access via: http://localhost:5000/assets/anjadhey.svg
+// Serve your SVG assets statically
 app.use("/assets", express.static(path.join(__dirname, "templates/assets")));
 
 // Connect to MongoDB and start server
@@ -38,13 +37,22 @@ async function start() {
   const uri = process.env.MONGO_URI || "";
   try {
     if (!uri) {
-      console.warn("⚠️ MONGO_URI not set in .env — using temporary in-memory logic if available.");
+      console.warn("⚠️ MONGO_URI not set in .env");
     } else {
       await mongoose.connect(uri);
       console.log("✅ MongoDB connected");
     }
+
+    // ▼▼▼ 2. ADD THIS BLOCK ▼▼▼
+    // This "warms up" Chromium by unpacking it before we accept requests.
+    // This fixes the ETXTBSY "file busy" error on Render.
+    console.log(" warming up Chromium...");
+    await chromium.executablePath();
+    console.log("✅ Chromium is ready.");
+    // ▲▲▲ ADD THIS BLOCK ▲▲▲
+
   } catch (err) {
-    console.error("❌ MongoDB connection error:", err);
+    console.error("❌ Server startup error:", err);
   }
 
   app.listen(PORT, () => {
