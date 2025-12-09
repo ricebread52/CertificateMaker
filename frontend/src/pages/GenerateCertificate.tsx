@@ -103,7 +103,7 @@ export default function GenerateCertificate() {
         console.error(`Failed row ${i}:`, err);
       }
 
-      await new Promise(r => setTimeout(r, 200));
+      await new Promise(r => setTimeout(r, 3000));
     }
 
     setStatus("Compressing files into ZIP...");

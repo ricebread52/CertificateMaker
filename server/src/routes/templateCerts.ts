@@ -10,23 +10,35 @@ const router = Router();
 
 /**
  * Convert HTML (or an HTML wrapper that contains an inline SVG) to PDF at exact pixel size.
+ * ⚡️ OPTIMIZED FOR RENDER (Docker)
  */
 async function svgStringToPdf(svgString: string, widthPx: number, heightPx: number) {
   
+  // 1. Launch with optimized flags for low-memory environments
   const browser = await puppeteer.launch({
-    args: chromium.args,
+    args: [
+      ...chromium.args,
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage', // critical for docker/render to prevent crashes
+      '--disable-gpu'
+    ],
     executablePath: await chromium.executablePath(),
+    headless: true
   });
 
   try {
     const page = await browser.newPage();
     
-    // ✅ FIX: Removed the error-causing line page.setIgnoreHTTPSErrors(true);
-    // It is not needed for this application.
+    // 2. Set a generous timeout (2 minutes) for heavy operations
+    page.setDefaultNavigationTimeout(120000); 
 
-    await page.setViewport({ width: Math.max(800, Math.round(widthPx)), height: Math.max(600, Math.round(heightPx)), deviceScaleFactor: 1 });
+    await page.setViewport({ 
+        width: Math.max(800, Math.round(widthPx)), 
+        height: Math.max(600, Math.round(heightPx)), 
+        deviceScaleFactor: 1 
+    });
 
-    // This font-embedding HTML is still correct
     const html = `
     <!doctype html>
     <html>
@@ -34,14 +46,18 @@ async function svgStringToPdf(svgString: string, widthPx: number, heightPx: numb
         <meta charset="utf-8"/>
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;800&display=swap');
+          body { margin: 0; padding: 0; }
         </style>
       </head>
-      <body style="margin:0;padding:0">
+      <body>
         ${svgString}
       </body>
     </html>`;
 
-    await page.setContent(html, { waitUntil: "networkidle0", timeout: 60000 });
+    // ⚡️ CRITICAL FIX: Changed 'networkidle0' to 'load'
+    // 'load' fires as soon as the HTML/CSS is ready. 
+    // It is much faster and prevents "Navigation timeout" errors on heavy pages.
+    await page.setContent(html, { waitUntil: "load", timeout: 120000 });
 
     const pdf = await page.pdf({
       printBackground: true,
@@ -53,6 +69,7 @@ async function svgStringToPdf(svgString: string, widthPx: number, heightPx: numb
 
     return pdf;
   } finally {
+    // Ensure browser closes even if errors occur
     await browser.close();
   }
 }
