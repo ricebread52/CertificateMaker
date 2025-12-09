@@ -27,9 +27,10 @@ export const TEMPLATES: TemplateDef[] = [
     accentColor: "#ea580c", // Orange/Red style
     fields: [
       { key: "NAME", label: "Recipient Name", type: "text", default: "Jeneil" },
-      { key: "COURSE", label: "Course/Event", type: "text", default: "Web Development Workshop" },
+      // Updated to match your expectations:
+      { key: "POSITION", label: "Position", type: "text", default: "Student" }, 
+      { key: "COMPETITION", label: "Competition/Course", type: "text", default: "Web Development" },
       { key: "DATE", label: "Date", type: "date", default: new Date().toISOString().slice(0, 10) },
-      { key: "ID_NO", label: "Certificate ID", type: "text", default: "ANJ-2025-001" },
     ],
     layout: { width: 1414, height: 2000, textAlign: "center", fontFamily: "serif" }
   },
@@ -49,5 +50,17 @@ export const TEMPLATES: TemplateDef[] = [
       { key: "GENERAL_NAME", label: "Right Signer", type: "text", default: "Signer Two" },
     ],
     layout: { width: 900, height: 631, textAlign: "center", fontFamily: "Playfair Display, serif" }
+  },
+  {
+    id: "anjadhey event", // ⚠️ MUST match the backend filename "anjadhey event.svg"
+    name: "Anjadhey Event (Children's Day)",
+    previewText: "Event Certificate",
+    accentColor: "#015E31", // Green theme
+    fields: [
+      { key: "NAME", label: "Student Name", type: "text", default: "Camila" },
+      { key: "COMPETITION", label: "Competition Name", type: "text", default: "Drawing Competition" },
+      { key: "DATE", label: "Date", type: "date", default: new Date().toISOString().slice(0, 10) },
+    ],
+    layout: { width: 1414, height: 2000, textAlign: "center", fontFamily: "serif" }
   },
 ];

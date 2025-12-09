@@ -10,8 +10,7 @@ export default function GenerateCertificate() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState("");
 
-  // 1. Handle File Upload (CLEAN UI VERSION)
-  // ... (Your handleFileUpload function is correct, no changes needed)
+  // 1. Handle File Upload
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -49,8 +48,7 @@ export default function GenerateCertificate() {
     setIsProcessing(true);
     setStatus("Initializing ZIP archive...");
 
-    // ✅ ADD THIS LINE:
-    // This automatically gets the new Vercel URL, or falls back to /api for localhost
+    // Matches your setup for Vercel env vars
     const apiUrl = import.meta.env.VITE_API_URL || '';
     
     const zip = new JSZip(); 
@@ -58,9 +56,11 @@ export default function GenerateCertificate() {
 
     for (let i = 0; i < excelData.length; i++) {
       const row = excelData[i];
-      const index = i;
+      //const index = i;
       
-      setStatus(`Generating ${i + 1} of ${excelData.length}: ${row.NAME || 'Participant'}...`);
+      // Try to find a good name for the status update
+      const displayName = row.NAME || row.STUDENT_NAME || row.PARTICIPANT || `Person ${i+1}`;
+      setStatus(`Generating ${i + 1} of ${excelData.length}: ${displayName}...`);
 
       try {
         const values = { ...row }; 
@@ -74,8 +74,6 @@ export default function GenerateCertificate() {
            if (!values[f.key]) values[f.key] = f.default;
         });
 
-        // ✅ UPDATE THIS LINE:
-        // Changed '/api/...' to `${apiUrl}/api/...`
         const resp = await fetch(`${apiUrl}/api/templates/generate-from-template`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -89,7 +87,7 @@ export default function GenerateCertificate() {
 
         const blob = await resp.blob();
         
-        const safeName = (row.NAME || row.Name || `Certificate-${index + 1}`)
+        const safeName = (displayName)
           .replace(/[^a-z0-9]/gi, '_'); 
           
         const fileName = `${safeName}.pdf`;
@@ -114,7 +112,6 @@ export default function GenerateCertificate() {
     setIsProcessing(false);
   };
 
-  // ... (Your return/JSX part is correct, no changes needed)
   return (
     <div className="max-w-4xl mx-auto p-8">
       <h1 className="text-3xl font-bold mb-6">Bulk Certificate Generator</h1>
@@ -137,8 +134,15 @@ export default function GenerateCertificate() {
       <div className="mb-6 p-4 bg-white border rounded shadow-sm">
         <label className="block font-semibold mb-2">2. Upload Excel File</label>
         <input type="file" accept=".xlsx, .xls, .csv" onChange={handleFileUpload} />
+        
+        {/* ✅ DYNAMIC LABEL CHANGE HERE */}
         <p className="text-sm text-gray-500 mt-2">
-          Required columns: NAME, POSITION, COMPETITION, DATE.
+          Required columns:{" "}
+          <strong className="text-indigo-600">
+            {TEMPLATES.find((t) => t.id === selectedTemplate)
+              ?.fields.map((f) => f.key)
+              .join(", ") || "NAME, COMPETITION, DATE"}
+          </strong>
         </p>
       </div>
 
