@@ -6,15 +6,21 @@ export type RenderOptions = {
 };
 
 export function getTemplateSize(templateId: string): { width: number; height: number } {
-  switch (templateId) {
+  // Normalize: remove .svg extension and make lowercase to prevent mismatches
+  const cleanId = templateId.replace('.svg', '').toLowerCase().trim();
+
+  switch (cleanId) {
     case "code-red":
       return { width: 842, height: 595 }; 
-    case "anjadhey": // <--- ADD THIS
-      return { width: 1414, height: 2000 }; // Standard A4 Landscape
+      
+    case "anjadhey": 
+    case "anjadhey event": // <--- ADDED: Fixes the chopped PDF issue!
+      return { width: 1414, height: 2000 }; 
+      
     default:
       return { width: 842, height: 595 };
   }
 }
 
-// Add "anjadhey" to this array
-export const AVAILABLE_TEMPLATES = ["code-red", "anjadhey"];
+// Add "anjadhey event" to this array
+export const AVAILABLE_TEMPLATES = ["code-red", "anjadhey", "anjadhey event"];
