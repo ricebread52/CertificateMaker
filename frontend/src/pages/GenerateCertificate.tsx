@@ -10,7 +10,7 @@ export default function GenerateCertificate() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [status, setStatus] = useState("");
 
-  // 1. Handle File Upload
+  // 1. Handle File Upload (FIXED DATE LOGIC)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -29,9 +29,14 @@ export default function GenerateCertificate() {
           const cleanKey = key.trim().toUpperCase().replace(/\s+/g, '_');
           
           let val = row[key];
+          
+          // 🛠️ FIX: Add 12 hours to prevent timezone rollback
           if (val instanceof Date) {
-             val = val.toLocaleDateString('en-GB'); 
+             const safeDate = new Date(val.getTime() + 43200000); // +12 hours
+             // Format as DD-MM-YYYY (or DD/MM/YYYY)
+             val = safeDate.toLocaleDateString('en-GB').replace(/\//g, '-'); 
           }
+          
           newRow[cleanKey] = val;
         });
         return newRow;
@@ -56,7 +61,6 @@ export default function GenerateCertificate() {
 
     for (let i = 0; i < excelData.length; i++) {
       const row = excelData[i];
-      //const index = i;
       
       // Try to find a good name for the status update
       const displayName = row.NAME || row.STUDENT_NAME || row.PARTICIPANT || `Person ${i+1}`;

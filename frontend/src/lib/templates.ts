@@ -53,7 +53,7 @@ export const TEMPLATES: TemplateDef[] = [
   },
   {
     id: "anjadhey event", // ⚠️ MUST match the backend filename "anjadhey event.svg"
-    name: "Anjadhey Event (Children's Day)",
+    name: "Anjadhey Event",
     previewText: "Event Certificate",
     accentColor: "#015E31", // Green theme
     fields: [
